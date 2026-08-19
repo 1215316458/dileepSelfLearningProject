@@ -1,8 +1,11 @@
 package com.ecommerce;
 
 import com.ecommerce.domain.enums.Category;
+import com.ecommerce.domain.exception.*;
 import com.ecommerce.domain.model.Product;
+import com.ecommerce.domain.pattern.factory.NotificationFactory;
 import com.ecommerce.domain.pattern.observer.*;
+import com.ecommerce.domain.pattern.singleton.IdGenerator;
 import com.ecommerce.domain.pattern.strategy.*;
 
 import java.math.BigDecimal;
@@ -13,6 +16,9 @@ public class Day3Main {
         testPricingStrategies();
         testStrategySwapAtRuntime();
         testObserver();
+        testExceptions();
+        testNotificationFactory();
+        testSingleton();
     }
 
     private static void testPricingStrategies() {
@@ -66,17 +72,15 @@ public class Day3Main {
 
         // lambdas work because EventListener is @FunctionalInterface
         // multiple listeners on the same event — all fire when ORDER_PLACED is published
-        publisher.subscribe(EventType.ORDER_PLACED,   data -> System.out.println("  [EmailService]     Order confirmation sent    | " + data));
-        publisher.subscribe(EventType.ORDER_PLACED,   data -> System.out.println("  [SMSService]       Order SMS alert sent       | " + data));
-        publisher.subscribe(EventType.ORDER_PLACED,   data -> System.out.println("  [InventoryService] Stock reserved              | " + data));
-        publisher.subscribe(EventType.PAYMENT_FAILED, data -> System.out.println("  [AlertService]     Payment failure alert sent  | " + data));
-        publisher.subscribe(EventType.USER_REGISTERED,data -> System.out.println("  [EmailService]     Welcome email sent         | " + data));
+        publisher.subscribe(EventType.ORDER_PLACED,    data -> System.out.println("  [EmailService]     Order confirmation sent    | " + data));
+        publisher.subscribe(EventType.ORDER_PLACED,    data -> System.out.println("  [SMSService]       Order SMS alert sent       | " + data));
+        publisher.subscribe(EventType.ORDER_PLACED,    data -> System.out.println("  [InventoryService] Stock reserved              | " + data));
+        publisher.subscribe(EventType.PAYMENT_FAILED,  data -> System.out.println("  [AlertService]     Payment failure alert sent  | " + data));
+        publisher.subscribe(EventType.USER_REGISTERED, data -> System.out.println("  [EmailService]     Welcome email sent         | " + data));
 
-        // publish — fires all listeners registered for ORDER_PLACED
         System.out.println("\n  -- Publishing ORDER_PLACED --");
         publisher.publish(EventType.ORDER_PLACED, "orderId=101, userId=1, total=$890.00");
 
-        // only AlertService fires here
         System.out.println("\n  -- Publishing PAYMENT_FAILED --");
         publisher.publish(EventType.PAYMENT_FAILED, "orderId=102, reason=card declined");
 
@@ -90,5 +94,81 @@ public class Day3Main {
         publisher.unsubscribeAll(EventType.ORDER_PLACED);
         publisher.publish(EventType.ORDER_PLACED, "orderId=103");
         System.out.println("  (no output — all ORDER_PLACED listeners removed)");
+    }
+
+    private static void testExceptions() {
+        System.out.println("\n=== Exceptions ===");
+
+        // ProductNotFoundException — throw, catch, print errorCode
+        try {
+            throw new ProductNotFoundException(42L);
+        } catch (EcommerceException e) {
+            System.out.println("  Caught: " + e);                   // [PRODUCT_001] Product not found with id: 42
+            System.out.println("  errorCode: " + e.getErrorCode()); // PRODUCT_001
+        }
+
+        // InsufficientStockException
+        try {
+            throw new InsufficientStockException(7L, 50, 3);
+        } catch (EcommerceException e) {
+            System.out.println("  Caught: " + e);                   // [PRODUCT_002] Insufficient stock...
+            System.out.println("  errorCode: " + e.getErrorCode()); // PRODUCT_002
+        }
+
+        // InvalidOrderStateException
+        try {
+            throw new InvalidOrderStateException("Cannot transition from DELIVERED to PENDING");
+        } catch (EcommerceException e) {
+            System.out.println("  Caught: " + e);                   // [ORDER_001] Cannot transition...
+            System.out.println("  errorCode: " + e.getErrorCode()); // ORDER_001
+        }
+
+        // PaymentFailedException
+        try {
+            throw new PaymentFailedException("card declined");
+        } catch (EcommerceException e) {
+            System.out.println("  Caught: " + e);                   // [PAYMENT_001] Payment failed: card declined
+        }
+
+        // DuplicateEmailException
+        try {
+            throw new DuplicateEmailException("user@example.com");
+        } catch (EcommerceException e) {
+            System.out.println("  Caught: " + e);                   // [USER_001] Email already registered...
+        }
+
+        // UnauthorizedException
+        try {
+            throw new UnauthorizedException("DELETE_PRODUCT");
+        } catch (EcommerceException e) {
+            System.out.println("  Caught: " + e);                   // [AUTH_001] Unauthorized to perform action...
+        }
+
+        // All are unchecked — catching the base EcommerceException catches all subtypes
+        System.out.println("  All exceptions caught via base EcommerceException — polymorphism at work");
+    }
+
+    private static void testNotificationFactory() {
+        System.out.println("\n=== Factory: NotificationFactory ===");
+
+        // Each EventType maps to a distinct message template
+        for (EventType type : EventType.values()) {
+            System.out.println("  " + type + " -> " + NotificationFactory.create(type));
+        }
+    }
+
+    private static void testSingleton() {
+        System.out.println("\n=== Singleton: IdGenerator ===");
+
+        IdGenerator g1 = IdGenerator.getInstance();
+        IdGenerator g2 = IdGenerator.getInstance();
+
+        // Both references point to the same instance — singleton guarantee
+        System.out.println("  Same instance: " + (g1 == g2));      // true
+
+        // getId() increments atomically — thread-safe via AtomicLong
+        System.out.println("  id1: " + g1.getId());                 // 1
+        System.out.println("  id2: " + g1.getId());                 // 2
+        System.out.println("  id3 via g2: " + g2.getId());          // 3 — same counter, same instance
     }
 }

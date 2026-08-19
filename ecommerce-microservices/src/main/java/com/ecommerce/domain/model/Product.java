@@ -5,7 +5,8 @@ import com.ecommerce.domain.enums.Category;
 import java.math.BigDecimal;
 import java.util.Comparator;
 
-public class Product extends BaseEntity<Long> {
+// Comparable — natural order by name (alphabetical). Used by Collections.sort(), TreeSet, etc.
+public class Product extends BaseEntity<Long> implements Comparable<Product> {
 
     private String name;
     private String description;
@@ -45,12 +46,18 @@ public class Product extends BaseEntity<Long> {
     public Category getCategory() { return category; }
     public void setCategory(Category category) { this.category = category; }
 
+    // Natural order by name — consistent with how products appear in a catalog
+    @Override
+    public int compareTo(Product other) {
+        return this.name.compareToIgnoreCase(other.name);
+    }
+
     @Override
     public String toString() {
         return new StringBuilder("Product{")
                 .append("id=").append(getIdentity())
                 .append(", name=").append(name)
-                .append(", price=").append(price)
+                .append(", price=$").append(price)
                 .append(", stock=").append(stock)
                 .append(", category=").append(category)
                 .append('}')
