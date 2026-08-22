@@ -8,6 +8,7 @@ import java.util.Comparator;
 // Comparable — natural order by name (alphabetical). Used by Collections.sort(), TreeSet, etc.
 public class Product extends BaseEntity<Long> implements Comparable<Product> {
 
+    private static final long serialVersionUID = 1L;
     private String name;
     private String description;
     // BigDecimal — never use double/float for money (precision loss)

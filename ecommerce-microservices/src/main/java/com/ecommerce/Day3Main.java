@@ -54,15 +54,15 @@ public class Day3Main {
         // start as regular user
         ShoppingCart cart = new ShoppingCart(new RegularPricing());
         cart.addItem(phone, 2);
-        System.out.println("  Regular total:  $" + cart.calculateTotal());
+        System.out.println("  Regular total:  $" + cart.getTotalAmount());
 
         // user upgrades to premium — swap strategy, cart code unchanged
         cart.setPricingStrategy(new PremiumUserPricing());
-        System.out.println("  Premium total:  $" + cart.calculateTotal() + " (20% off)");
+        System.out.println("  Premium total:  $" + cart.getTotalAmount() + " (20% off)");
 
         // bulk order
         cart.setPricingStrategy(new BulkPricing());
-        System.out.println("  Bulk total:     $" + cart.calculateTotal() + " (no discount, qty=2 below 10)");
+        System.out.println("  Bulk total:     $" + cart.getTotalAmount() + " (no discount, qty=2 below 10)");
     }
 
     private static void testObserver() {

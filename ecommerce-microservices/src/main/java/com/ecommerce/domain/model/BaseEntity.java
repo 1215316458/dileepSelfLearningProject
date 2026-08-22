@@ -1,8 +1,13 @@
 package com.ecommerce.domain.model;
 
+import java.io.Serializable;
 import java.time.LocalDateTime;
 
-public abstract class BaseEntity<ID> {
+// Serializable — allows subclasses (Product, User, Order) to be serialized.
+// serialVersionUID — version stamp. If class structure changes and UID doesn't match, deserialization throws InvalidClassException.
+public abstract class BaseEntity<ID> implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     // private — no one outside this class should directly touch these fields
     private ID identity;

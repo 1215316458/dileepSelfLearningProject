@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 
 public class CartItem {
 
+    private static final long serialVersionUID = 1L;
     // fields are final — CartItem is immutable by design.
     // If you need a different quantity, create a new CartItem instead of mutating this one.
     // Immutability prevents accidental state changes when CartItem is shared across collections.

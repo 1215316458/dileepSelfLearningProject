@@ -11,6 +11,7 @@ import java.util.List;
 
 public class Order extends BaseEntity<Long> {
 
+    private static final long serialVersionUID = 1L;
     private Long userId;
     private List<CartItem> items;
     private BigDecimal totalAmount;

@@ -4,9 +4,13 @@ import com.ecommerce.domain.enums.Role;
 
 public class User extends BaseEntity<Long> {
 
+    private static final long serialVersionUID = 1L;
+
     private String username;
     private String email;
-    private String password;
+    // transient — skipped during serialization. Password will be null after deserialization.
+    // Never persist raw passwords to disk.
+    private transient String password;
     private Role role;
 
     public User(Long id, String username, String email, String password, Role role) {
