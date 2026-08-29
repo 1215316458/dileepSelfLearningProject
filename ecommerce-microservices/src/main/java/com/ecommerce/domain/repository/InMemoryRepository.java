@@ -7,6 +7,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 // Abstract — subclasses get all CRUD for free, only add domain-specific queries on top.
 // LinkedHashMap — preserves insertion order (important for OrderRepository chronological queries).
@@ -14,7 +15,7 @@ import java.util.Optional;
 public abstract class InMemoryRepository<T extends BaseEntity<ID>, ID> implements Repository<T, ID> {
 
     // protected — subclasses can read the store for custom queries (e.g. filter by category)
-    protected final Map<ID, T> store = new LinkedHashMap<>();
+    protected final Map<ID, T> store = new ConcurrentHashMap<>();
 
     @Override
     public T save(T entity) {
