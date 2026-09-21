@@ -1,0 +1,106 @@
+spring:
+  application:
+    name: order-service
+  profiles:
+    active: dev
+  datasource:
+    url: jdbc:h2:mem:orderdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8083
+
+# product-service base URL — in Day 23 this becomes lb://product-service via Eureka
+product-service:
+  url: http://localhost:8081
+
+# Resilience4j configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      product-service:
+        # sliding window of 10 calls; open circuit if 50%+ fail
+        sliding-window-size: 10
+        failure-rate-threshold: 50
+        # wait 10s in OPEN state before trying HALF-OPEN
+        wait-duration-in-open-state: 10s
+        # allow 3 calls in HALF-OPEN to test recovery
+        permitted-number-of-calls-in-half-open-state: 3
+        # count slow calls (>2s) as failures
+        slow-call-duration-threshold: 2s
+        slow-call-rate-threshold: 50
+        register-health-indicator: true
+
+  retry:
+    instances:
+      product-service:
+        max-attempts: 3
+        wait-duration: 500ms
+        # exponential backoff: 500ms → 1000ms → 2000ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        # only retry on these exceptions
+        retry-exceptions:
+          - org.springframework.web.client.RestClientException
+          - java.io.IOException
+
+  bulkhead:
+    instances:
+      product-service:
+        # max 10 concurrent calls to product-service
+        max-concurrent-calls: 10
+        max-wait-duration: 100ms
+
+  timelimiter:
+    instances:
+      product-service:
+        # cancel call if product-service takes > 3s
+        timeout-duration: 3s
+
+# eureka client omitted — spring-cloud-commons 4.1.0 is incompatible with SB4.x
+# add spring-cloud-starter-netflix-eureka-client when a SB4-compatible release is cached
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,circuitbreakers,prometheus
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0   # sample 100% of requests (use 0.1 in production)
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss} [%X{traceId}/%X{spanId}] %-5level %logger{36} - %msg%n"

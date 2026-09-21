@@ -1,3 +1,12 @@
 {
+    "java.configuration.runtimes": [
+        {
+            "name": "JavaSE-21",
+            "path": "C:\\Program Files\\Zulu\\zulu-21",
+            "default": true
+        }
+    ],
+    "java.jdt.ls.java.home": "C:\\Program Files\\Zulu\\zulu-21",
+    "maven.executable.path": "",
     "java.compile.nullAnalysis.mode": "automatic"
 }

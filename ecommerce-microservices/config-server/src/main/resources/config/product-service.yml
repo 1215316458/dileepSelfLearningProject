@@ -1,0 +1,6 @@
+# Served by config-server to product-service at startup
+# GET http://localhost:8888/product-service/default
+
+product:
+  low-stock-threshold: 10
+  cache-ttl-seconds: 300

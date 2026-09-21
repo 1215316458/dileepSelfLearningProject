@@ -4,6 +4,8 @@ import com.ecommerce.domain.enums.OrderStatus;
 import com.ecommerce.domain.model.Order;
 import com.ecommerce.domain.model.User;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -12,19 +14,13 @@ import java.util.PriorityQueue;
 
 public class OrderRepository extends InMemoryRepository<Order, Long> {
 
-    // LinkedHashMap — preserves insertion order so findByUserId returns orders chronologically.
-    // HashMap doesn't guarantee order; LinkedHashMap maintains it at minimal overhead.
     private final UserRepository userRepository;
 
     public OrderRepository(UserRepository userRepository) {
         this.userRepository = userRepository;
-        // replace parent's HashMap store with LinkedHashMap to preserve insertion order
-        // store is protected in InMemoryRepository so we can clear and re-populate,
-        // but the cleanest approach is to shadow it — done via the parent's protected field
-        // by putting all entries through save() which calls store.put() on the LinkedHashMap below.
     }
 
-    // Returns orders for a user in chronological order (insertion order via LinkedHashMap)
+    // Returns orders for a user in chronological order (insertion order via ConcurrentHashMap)
     public List<Order> findByUserId(Long userId) {
         List<Order> result = new ArrayList<>();
         for (Order o : store.values()) {
@@ -41,18 +37,34 @@ public class OrderRepository extends InMemoryRepository<Order, Long> {
         return Collections.unmodifiableList(result);
     }
 
-    // PriorityQueue — heap-based, orders processed by priority (ADMIN > SELLER > CUSTOMER).
-    // Returns a queue where poll() always gives the highest-priority order first.
-    // Comparator: lower ordinal = higher priority in our Role enum ordering (CUSTOMER=0, SELLER=1, ADMIN=2)
-    // We invert so ADMIN (2) comes out first.
+    // Orders placed between from and to (inclusive) — useful for monthly reports
+    public List<Order> findByDateRange(LocalDateTime from, LocalDateTime to) {
+        List<Order> result = new ArrayList<>();
+        for (Order o : store.values()) {
+            LocalDateTime created = o.getCreatedAt();
+            if (!created.isBefore(from) && !created.isAfter(to)) {
+                result.add(o);
+            }
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    // Total amount spent by a user across all their orders
+    public BigDecimal getTotalSpendByUser(Long userId) {
+        return store.values().stream()
+                .filter(o -> o.getUserId().equals(userId))
+                .map(Order::getTotalAmount)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    // PriorityQueue — heap-based, orders processed by priority (ADMIN > SELLER > CUSTOMER)
+    // poll() always returns the highest-priority order first
     public PriorityQueue<Order> buildProcessingQueue() {
-        // Comparator: compare by user role priority — ADMIN first, then SELLER, then CUSTOMER
         PriorityQueue<Order> queue = new PriorityQueue<>((o1, o2) -> {
             int p1 = getRolePriority(o1.getUserId());
             int p2 = getRolePriority(o2.getUserId());
             return Integer.compare(p2, p1); // descending — higher priority first
         });
-
         // only enqueue PENDING orders — those are waiting to be processed
         for (Order o : store.values()) {
             if (o.getStatus() == OrderStatus.PENDING) queue.offer(o);

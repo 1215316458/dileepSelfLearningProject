@@ -1,0 +1,30 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: service-registry
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    # This IS the registry — it should not register with itself
+    register-with-eureka: false
+    # This IS the registry — it does not need to fetch the registry from itself
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+  server:
+    # Self-preservation mode: Eureka keeps registrations even if heartbeats stop
+    # (protects against network partitions in production).
+    # Disabled here so stale instances are removed quickly during local dev.
+    enable-self-preservation: false
+    # Evict instances that haven't sent a heartbeat in 5 seconds (dev only)
+    eviction-interval-timer-in-ms: 5000
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

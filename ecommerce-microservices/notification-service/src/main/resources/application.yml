@@ -1,0 +1,32 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: notification-service
+  kafka:
+    bootstrap-servers: localhost:9092
+    consumer:
+      group-id: notification-service
+      # earliest: read from beginning if no committed offset exists
+      # latest: only read new messages (default)
+      # Use earliest in dev so you don't miss events from before the service started
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        # Tell JsonDeserializer which class to deserialize into
+        spring.json.trusted.packages: "com.ecommerce.notification_service.event"
+        spring.json.value.default.type: "com.ecommerce.notification_service.event.OrderPlacedEvent"
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/notificationdb
+      auto-index-creation: true
+
+# eureka client omitted — spring-cloud-commons 4.1.0 is incompatible with SB4.x
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: product-service
+  profiles:
+    active: dev
+  datasource:
+    url: jdbc:h2:mem:productdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  cache:
+    type: redis
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      connect-timeout: 2s
+      timeout: 1s
+
+server:
+  port: 8081
+
+# eureka client omitted — spring-cloud-commons 4.1.0 is incompatible with SB4.x
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,beans,env,prometheus
+  endpoint:
+    health:
+      show-details: always
+  info:
+    env:
+      enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://localhost:9411/api/v2/spans
+
+logging:
+  pattern:
+    console: "%d{HH:mm:ss} [%X{traceId}/%X{spanId}] %-5level %logger{36} - %msg%n"
+
+info:
+  app:
+    name: product-service
+    version: 1.0.0
+    description: Product management microservice

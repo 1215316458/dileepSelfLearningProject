@@ -1,0 +1,7 @@
+# Served by config-server to order-service at startup
+# GET http://localhost:8888/order-service/default
+# @RefreshScope beans reload when POST http://localhost:8083/actuator/refresh is called
+
+order:
+  max-items-per-order: 20
+  stuck-order-timeout-minutes: 30

@@ -1,0 +1,6 @@
+# Served by config-server to notification-service at startup
+# GET http://localhost:8888/notification-service/default
+
+notification:
+  max-per-user: 100
+  retention-days: 30
